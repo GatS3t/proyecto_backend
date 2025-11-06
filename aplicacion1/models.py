@@ -1,30 +1,29 @@
 from django.db import models
 import datetime
-from rutificador import Rut
+from rut_chile import rut_chile
 from django.core.exceptions import ValidationError
-
 
 ahora = datetime.datetime.now
 
 # Create your models here.
 
+def validar_rut(rut):
+    valido = rut_chile.is_valid_rut(rut)
+    if valido == False:
+        raise ValidationError('RUT inválido.')
 
 
-def ValidarRut(rut):
-    try:
-        rut_valido = Rut(rut)
-    except:
-        raise ValidationError('Digito verificador NO corresponde.')
-
-def ValidarMayoriaEdad(fecha_nacimiento):
-    hoy = datetime.date.today() 
-    edad = hoy.year - fecha_nacimiento.year
-    
-    #Resta un año si aún no ha cumplido años este año
-    if (hoy.month, hoy.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
+def validar_mayoria_edad(fecha_nacimiento):
+    fecha_actual = datetime.datetime.now()
+    edad = fecha_actual.year - fecha_nacimiento.year
+    if (fecha_actual.month, fecha_actual.day) < (fecha_nacimiento.month, fecha_nacimiento.day):
         edad -= 1
-    if edad < 18:   
-        raise ValidationError('Debe ser mayor de edad...')
+    if edad < 18:
+        raise ValidationError('Debe ser mayor de edad.')
+    
+class OpcionesGenero(models.TextChoices):
+    MASCULINO = 'M', 'Masculino'
+    FEMENINO = 'F', 'Femenino'
 
 class Nacionalidad(models.Model):
     pais = models.CharField(max_length=50, blank=False)
@@ -89,17 +88,22 @@ class Biblioteca(models.Model):
 
 class Lector(models.Model):
     id_biblioteca = models.ForeignKey(
-        Biblioteca, on_delete=models.CASCADE, blank=False)
+        Biblioteca, on_delete=models.CASCADE, null=False)
     id_direccion = models.ForeignKey(
-        Direccion, on_delete=models.CASCADE, blank=True)
-    rut_lector = models.CharField(max_length=12, unique=True, validators=[ValidarRut])
-    # digito_verificador = models.CharField(max_length=1, blank=False)
-    nombre_lector = models.CharField(max_length=255, blank=False)
+        Direccion, on_delete=models.CASCADE, null=True)
+    rut_lector = models.CharField(
+        max_length=12, blank=False, unique=True, validators=[validar_rut])
+    nombre_lector = models.CharField(max_length=255, null=False)
     correo_lector = models.CharField(max_length=255, blank=True)
-    fecha_nacimiento = models.DateField(blank=True, validators=[ValidarMayoriaEdad])
+    fecha_nacimiento = models.DateField(
+        blank=True, default=None, validators=[validar_mayoria_edad])
+    genero = models.CharField(max_length=1,choices=OpcionesGenero.choices,default=OpcionesGenero.MASCULINO)
     habilitado = models.BooleanField(default=True)
     created_at = models.DateTimeField(default=ahora)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.nombre_lector
 
 
 class TipoCategoria(models.Model):
@@ -120,8 +124,6 @@ class Categoria(models.Model):
 
     def __str__(self):
         return self.categoria
-
-
 
 class Libro(models.Model):
     id_biblioteca = models.ForeignKey(

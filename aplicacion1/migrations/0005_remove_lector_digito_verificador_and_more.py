@@ -18,12 +18,12 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='lector',
             name='fecha_nacimiento',
-            field=models.DateField(blank=True, default='1990-1-1', validators=[aplicacion1.models.ValidarMayoriaEdad]),
+            field=models.DateField(blank=True, default='1990-1-1', validators=[aplicacion1.models.validar_mayoria_edad]),
             preserve_default=False,
         ),
         migrations.AlterField(
             model_name='lector',
             name='rut_lector',
-            field=models.CharField(max_length=12, unique=True, validators=[aplicacion1.models.ValidarRut]),
+            field=models.CharField(max_length=12, unique=True, validators=[aplicacion1.models.validar_rut]),
         ),
     ]
